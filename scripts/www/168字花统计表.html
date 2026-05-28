@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ecebe7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>168字花统计表</title>
+  <style>
+    :root {
+      --paper-bg: #f2f2f0;
+      --paper-border: #b9b9b2;
+      --ink: #1d1d1b;
+      --line: #9b9b95;
+      --accent: #5a4a2f;
+      --accent-hover: #3f3421;
+      --panel: rgba(255, 255, 255, 0.66);
+      --shadow: 0 16px 40px rgba(40, 38, 33, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 35%),
+        linear-gradient(180deg, #ecebe7 0%, #e4e2db 100%);
+      color: var(--ink);
+      font-family: "SimSun", "Songti SC", serif;
+      padding: 24px;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .page {
+      max-width: 1220px;
+      margin: 0 auto;
+      background: var(--paper-bg);
+      border: 1px solid var(--paper-border);
+      box-shadow: var(--shadow);
+      padding: 28px 34px 32px;
+      border-radius: 18px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      text-align: center;
+      font-size: clamp(36px, 5vw, 58px);
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      letter-spacing: 2px;
+      font-weight: 800;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      margin-bottom: 18px;
+    }
+
+    .meta-label {
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .meta-input,
+    .summary-input,
+    .amount-input {
+      border: none;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      outline: none;
+      color: var(--ink);
+      font-size: 18px;
+      padding: 8px 6px;
+      min-height: 40px;
+      border-radius: 0;
+    }
+
+    .meta-input {
+      width: 80px;
+      text-align: center;
+    }
+
+    .session-input {
+      width: 96px;
+    }
+
+    .table-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .table-head span {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      padding: 0 10px 0 0;
+    }
+
+    .entry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      position: relative;
+    }
+
+    .entry-grid::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 12px;
+      width: 1px;
+      background: var(--line);
+      transform: translateX(-12px);
+    }
+
+    .entry-column {
+      padding-right: 10px;
+    }
+
+    .entry-row {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      align-items: center;
+      min-height: 38px;
+      gap: 12px;
+    }
+
+    .name-cell {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 18px;
+      white-space: nowrap;
+    }
+
+    .index-text {
+      width: 34px;
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .name-text {
+      font-weight: 600;
+    }
+
+    .amount-input {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      margin: 24px 0 10px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .summary-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-input {
+      width: 120px;
+      text-align: center;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .mobile-hint {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px dashed #c8c2b4;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #534d42;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      padding: 12px 18px;
+      min-height: 44px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 8px 18px rgba(90, 74, 47, 0.22);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: var(--accent-hover);
+    }
+
+    button.secondary {
+      background: #7c7c74;
+      box-shadow: 0 8px 18px rgba(63, 63, 59, 0.2);
+    }
+
+    button.secondary:hover {
+      background: #61615b;
+    }
+
+    .result-panel {
+      margin-top: 18px;
+      background: var(--panel);
+      border: 1px solid #d6d3cb;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .result-head h2 {
+      margin: 0;
+      font-size: 20px;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    }
+
+    .tip {
+      color: #5f5a50;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      resize: vertical;
+      border: 1px solid #d0cbc0;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+    }
+
+    .status {
+      margin-top: 10px;
+      min-height: 22px;
+      color: #7a2f2f;
+      font-size: 14px;
+    }
+
+    .status.success {
+      color: #235f31;
+    }
+
+    @media (max-width: 980px) {
+      .entry-grid,
+      .table-head {
+        grid-template-columns: 1fr;
+      }
+
+      .entry-grid::before {
+        display: none;
+      }
+
+      .summary-row {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 10px;
+        padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .page {
+        padding: 18px 14px 20px;
+        border-radius: 14px;
+      }
+
+      .entry-row,
+      .table-head span {
+        grid-template-columns: 118px 1fr;
+      }
+
+      .name-cell,
+      .summary-row,
+      .meta-row {
+        font-size: 16px;
+      }
+
+      .meta-row {
+        gap: 8px;
+      }
+
+      .meta-input {
+        width: 72px;
+      }
+
+      .session-input {
+        width: 96px;
+      }
+
+      .name-cell {
+        font-size: 16px;
+      }
+
+      .index-text {
+        width: 28px;
+      }
+
+      .summary-row {
+        gap: 10px;
+      }
+
+      .summary-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .summary-input {
+        flex: 1;
+        min-width: 0;
+        max-width: 140px;
+      }
+
+      .toolbar {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        margin: 18px -14px 0;
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+        background: rgba(242, 242, 240, 0.95);
+        backdrop-filter: blur(8px);
+        border-top: 1px solid #d2cec3;
+      }
+
+      .toolbar button {
+        flex: 1 1 calc(50% - 6px);
+      }
+
+      textarea {
+        min-height: 240px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>168字花统计表</h1>
+
+    <div class="mobile-hint">
+      这是标准 H5 页面，电脑浏览器、安卓浏览器、苹果 Safari 都可以打开。
+      如果要让手机“直接打开”，最方便的方式是把这个文件放到网页服务器上，然后用手机访问网址。
+    </div>
+
+    <div class="meta-row">
+      <span class="meta-label">年</span>
+      <input id="year" class="meta-input" type="text" inputmode="numeric" placeholder="2026" />
+      <span class="meta-label">月</span>
+      <input id="month" class="meta-input" type="text" inputmode="numeric" placeholder="05" />
+      <span class="meta-label">日（</span>
+      <input id="day" class="meta-input" type="text" inputmode="numeric" placeholder="18" />
+      <span class="meta-label">）场</span>
+      <input id="session" class="meta-input session-input" type="text" placeholder="第1场" />
+    </div>
+
+    <div class="table-head">
+      <span><strong>名称</strong><strong>金额</strong></span>
+      <span><strong>名称</strong><strong>金额</strong></span>
+    </div>
+
+    <div id="entryGrid" class="entry-grid"></div>
+
+    <div class="summary-row">
+      <div class="summary-group">
+        <span>合计金额：</span>
+        <input id="totalAmount" class="summary-input" type="text" inputmode="decimal" placeholder="0" />
+        <span>元</span>
+      </div>
+      <div class="summary-group">
+        <span>应付公司：</span>
+        <input id="payableCompany" class="summary-input" type="text" inputmode="decimal" placeholder="0" />
+        <span>元</span>
+      </div>
+      <div class="summary-group">
+        <span>代理抽水：</span>
+        <input id="agentCommission" class="summary-input" type="text" inputmode="decimal" placeholder="0" />
+        <span>元</span>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button id="generateBtn" type="button">保存生成 JSON</button>
+      <button id="copyBtn" type="button" class="secondary">复制 JSON</button>
+      <button id="downloadBtn" type="button" class="secondary">下载 JSON 文件</button>
+      <button id="resetBtn" type="button" class="secondary">清空表单</button>
+    </div>
+
+    <div class="result-panel">
+      <div class="result-head">
+        <h2>JSON 结果</h2>
+        <span class="tip">点击“保存生成 JSON”后，这里会自动输出格式化结果</span>
+      </div>
+      <textarea id="jsonOutput" readonly placeholder="这里会显示生成后的 JSON 内容"></textarea>
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    // 固定的 36 个字花名称，页面加载时会根据这个数组自动渲染录入行。
+    // 如果后续名称需要调整，只需要修改这里的名称即可。
+    const itemNames = [
+      "仙鹤", "家猪", "蜜蜂", "老鼠", "野猫", "马", "大象", "狗", "飞龙",
+      "牛", "猪", "兔子", "老虎", "蜈蚣", "孔雀", "大鹅", "螺蛳", "白鱼",
+      "狐狸", "金鱼", "鳝鱼", "鸡", "乌龟", "羊", "蜘蛛", "马鹿", "螃蟹",
+      "蛇", "燕子", "鸽子", "宝石", "蝴蝶", "青蛙", "乌鸦", "猴子", "金龙"
+    ];
+
+    const entryGrid = document.getElementById("entryGrid");
+    const jsonOutput = document.getElementById("jsonOutput");
+    const statusEl = document.getElementById("status");
+
+    // 负责渲染左右两列录入区域，让页面结构接近原始统计表。
+    function renderEntries() {
+      const leftColumn = document.createElement("div");
+      leftColumn.className = "entry-column";
+
+      const rightColumn = document.createElement("div");
+      rightColumn.className = "entry-column";
+
+      itemNames.forEach((name, index) => {
+        const row = document.createElement("div");
+        row.className = "entry-row";
+
+        const nameCell = document.createElement("div");
+        nameCell.className = "name-cell";
+        nameCell.innerHTML = `
+          <span class="index-text">${index + 1}</span>
+          <span class="name-text">${name}</span>
+        `;
+
+        // 每一项金额输入框都记录自己的序号和名称，后续生成 JSON 时可直接读取。
+        const amountInput = document.createElement("input");
+        amountInput.className = "amount-input";
+        amountInput.type = "text";
+        amountInput.inputMode = "decimal";
+        amountInput.placeholder = "请输入金额";
+        amountInput.dataset.index = String(index + 1);
+        amountInput.dataset.name = name;
+
+        row.appendChild(nameCell);
+        row.appendChild(amountInput);
+
+        if (index < 18) {
+          leftColumn.appendChild(row);
+        } else {
+          rightColumn.appendChild(row);
+        }
+      });
+
+      entryGrid.appendChild(leftColumn);
+      entryGrid.appendChild(rightColumn);
+    }
+
+    // 读取页面中的全部输入值，并整理成统一的 JSON 结构。
+    function collectFormData() {
+      const amountInputs = Array.from(document.querySelectorAll(".amount-input"));
+
+      return {
+        dateInfo: {
+          year: document.getElementById("year").value.trim(),
+          month: document.getElementById("month").value.trim(),
+          day: document.getElementById("day").value.trim(),
+          session: document.getElementById("session").value.trim()
+        },
+        items: amountInputs.map((input) => ({
+          index: Number(input.dataset.index),
+          name: input.dataset.name,
+          amount: input.value.trim()
+        })),
+        summary: {
+          totalAmount: document.getElementById("totalAmount").value.trim(),
+          payableCompany: document.getElementById("payableCompany").value.trim(),
+          agentCommission: document.getElementById("agentCommission").value.trim()
+        }
+      };
+    }
+
+    // 统一更新页面状态提示，方便提示复制成功或下载结果等信息。
+    function setStatus(message, isSuccess) {
+      statusEl.textContent = message;
+      statusEl.className = isSuccess ? "status success" : "status";
+    }
+
+    // 点击保存时将当前录入内容格式化为 JSON 并展示到结果区域。
+    function generateJson() {
+      const data = collectFormData();
+      const jsonText = JSON.stringify(data, null, 2);
+      jsonOutput.value = jsonText;
+      setStatus("JSON 已生成，可以复制或下载保存。", true);
+      return jsonText;
+    }
+
+    async function copyJson() {
+      const content = jsonOutput.value.trim() || generateJson();
+
+      try {
+        await navigator.clipboard.writeText(content);
+        setStatus("JSON 已复制到剪贴板。", true);
+      } catch (error) {
+        setStatus("复制失败，请手动选择文本后复制。", false);
+      }
+    }
+
+    // 将生成好的 JSON 作为本地文件下载，文件名会尽量带上日期信息。
+    function downloadJson() {
+      const content = jsonOutput.value.trim() || generateJson();
+      const year = document.getElementById("year").value.trim() || "年";
+      const month = document.getElementById("month").value.trim() || "月";
+      const day = document.getElementById("day").value.trim() || "日";
+      const session = document.getElementById("session").value.trim() || "场次";
+      const fileName = `168字花统计表-${year}-${month}-${day}-${session}.json`;
+
+      const blob = new Blob([content], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("JSON 文件已开始下载。", true);
+    }
+
+    function resetForm() {
+      document.querySelectorAll("input").forEach((input) => {
+        input.value = "";
+      });
+      jsonOutput.value = "";
+      setStatus("表单已清空。", true);
+    }
+
+    document.getElementById("generateBtn").addEventListener("click", generateJson);
+    document.getElementById("copyBtn").addEventListener("click", copyJson);
+    document.getElementById("downloadBtn").addEventListener("click", downloadJson);
+    document.getElementById("resetBtn").addEventListener("click", resetForm);
+
+    renderEntries();
+  </script>
+</body>
+</html>
